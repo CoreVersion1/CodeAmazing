@@ -1,3 +1,15 @@
+/**
+ * @file BinaryTree.cpp
+ * @author your name (you@domain.com)
+ * @brief 
+ * @version 0.1
+ * @date 2024-10-28
+ * 
+ * @copyright Copyright (c) 2024
+ * @link https://www.hello-algo.com/chapter_tree/array_representation_of_tree/#732
+ * 
+ */
+
 #include <vector>
 #include <string>
 #include <climits>
