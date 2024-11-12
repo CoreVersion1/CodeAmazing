@@ -168,7 +168,7 @@ IndentCaseLabels: true
 IndentPPDirectives: None
 
 # 缩进宽度
-IndentWidth: 4
+IndentWidth: 2
 
 # 函数返回类型换行时，缩进函数声明或函数定义的函数名
 IndentWrappedFunctionNames: false
