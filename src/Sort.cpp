@@ -7,7 +7,6 @@ class Solution {
  public:
   void PrintVector(const std::vector<int> &nums)
   {
-    std::cout << std::endl;
     for (const auto &num : nums)
     {
       std::cout << num << " ";
