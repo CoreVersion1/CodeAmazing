@@ -109,6 +109,46 @@ class Solution {
       }
     }
   }
+
+  // 快速排序的分区函数：将小于基准项的项放在基准左边，大于基准项的项放在基准右边
+  int Partition(std::vector<int> &nums, int low, int high)
+  {
+    int pivot = nums[high];  // 以最后一项为基准
+    int i     = low - 1;     // i 为小于基准项的最后一项的索引
+
+    for (int j = low; j < high; j++)
+    {
+      if (nums[j] < pivot)
+      {
+        i++;
+        std::swap(nums[i], nums[j]);  // 将小于基准项的项放在基准左边
+      }
+    }
+
+    std::swap(nums[i + 1], nums[high]);  // 将基准项放在正确的位置
+    return i + 1;                        // 返回基准项的索引
+  }
+
+  // 快速排序
+  // 时间复杂度O(nlogn)，空间复杂度O(logn)，不稳定的排序
+  void Sort_Quick(std::vector<int> &nums, int low, int high)
+  {
+    if (low >= high)  // 递归终止条件
+    {
+      return;
+    }
+
+    int pivot = Partition(nums, low, high);
+    Sort_Quick(nums, low, pivot - 1);
+    Sort_Quick(nums, pivot + 1, high);
+  }
+
+  // 快速排序
+  // 时间复杂度O(nlogn)，空间复杂度O(logn)，不稳定的排序
+  void Sort_Quick(std::vector<int> &nums)
+  {
+    Sort_Quick(nums, 0, nums.size() - 1);
+  }
 };
 
 int main(void)
