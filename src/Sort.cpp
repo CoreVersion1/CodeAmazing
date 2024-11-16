@@ -217,31 +217,37 @@ int main(void)
 
   std::cout << "Sort_Select: " << std::endl;
   nums_tmp = nums;
+  s.PrintVector(nums_tmp);
   s.Sort_Select(nums_tmp);
   s.PrintVector(nums_tmp);
 
   std::cout << "Sort_Bubble: " << std::endl;
   nums_tmp = nums;
+  s.PrintVector(nums_tmp);
   s.Sort_Bubble(nums_tmp);
   s.PrintVector(nums_tmp);
 
   std::cout << "Sort_Insert: " << std::endl;
   nums_tmp = nums;
+  s.PrintVector(nums_tmp);
   s.Sort_Insert(nums_tmp);
   s.PrintVector(nums_tmp);
 
   std::cout << "Sort_Shell: " << std::endl;
   nums_tmp = nums;
+  s.PrintVector(nums_tmp);
   s.Sort_Shell(nums_tmp);
   s.PrintVector(nums_tmp);
 
   std::cout << "Sort_Quick: " << std::endl;
   nums_tmp = nums;
+  s.PrintVector(nums_tmp);
   s.Sort_Quick(nums_tmp);
   s.PrintVector(nums_tmp);
 
   std::cout << "Sort_Merge: " << std::endl;
   nums_tmp = nums;
+  s.PrintVector(nums_tmp);
   s.Sort_Merge(nums_tmp);
   s.PrintVector(nums_tmp);
 
