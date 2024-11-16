@@ -14,19 +14,19 @@ class ListNode {
 class solution {
  public:
   // 数组创建链表
-  ListNode* CreateList(const std::vector<int>& nums)
+  ListNode* CreateList(const std::vector<int>& arr)
   {
-    if (nums.empty())
+    if (arr.empty())
     {
       return nullptr;
     }
 
-    auto* head = new ListNode(nums[0]);
+    auto* head = new ListNode(arr[0]);
     auto* cur  = head;
 
-    for (int i = 1; i < nums.size(); ++i)
+    for (int i = 1; i < arr.size(); ++i)
     {
-      cur->next = new ListNode(nums[i]);
+      cur->next = new ListNode(arr[i]);
       cur       = cur->next;
     }
     return head;
