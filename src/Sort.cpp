@@ -149,6 +149,65 @@ class Solution {
   {
     Sort_Quick(nums, 0, nums.size() - 1);
   }
+
+  // 归并函数，将两个有序区间合并
+  void Merge(std::vector<int> &nums, int left, int mid, int right)
+  {
+    int i = left;
+    int j = mid + 1;
+    std::vector<int> tmp{};
+
+    // 合并两个有序区间
+    while (i <= mid && j <= right)
+    {
+      if (nums[i] < nums[j])
+      {
+        tmp.push_back(nums[i++]);
+      }
+      else
+      {
+        tmp.push_back(nums[j++]);
+      }
+    }
+
+    // 将剩余项添加到tmp
+    while (i <= mid)
+    {
+      tmp.push_back(nums[i++]);
+    }
+    while (j <= right)
+    {
+      tmp.push_back(nums[j++]);
+    }
+
+    // 将tmp拷贝到nums
+    for (int k = 0; k < tmp.size(); k++)
+    {
+      nums[left + k] = tmp[k];
+    }
+  }
+
+  // 归并排序
+  // 时间复杂度O(nlogn)，空间复杂度O(n)，稳定的排序
+  void Sort_Merge(std::vector<int> &nums, int left, int right)
+  {
+    if (left >= right)  // 递归终止条件
+    {
+      return;
+    }
+
+    int mid = (left + right) / 2;      // 找到中间项
+    Sort_Merge(nums, left, mid);       // 排序左边
+    Sort_Merge(nums, mid + 1, right);  // 排序右边
+    Merge(nums, left, mid, right);     // 合并
+  }
+
+  // 归并排序
+  // 时间复杂度O(nlogn)，空间复杂度O(n)，稳定的排序
+  void Sort_Merge(std::vector<int> &nums)
+  {
+    Sort_Merge(nums, 0, nums.size() - 1);
+  }
 };
 
 int main(void)
