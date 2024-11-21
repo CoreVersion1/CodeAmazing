@@ -42,7 +42,6 @@ class Solution {
   // 求斐波那契数
   int fib(int n)
   {
-    target_.reserve(n + 1);
     target_.assign(n + 1, -1);
 
     return DP_Fib2(n);
