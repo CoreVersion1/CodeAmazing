@@ -86,7 +86,7 @@ class solution {
   }
 
   // 删除节点
-  ListNode* DelNode(ListNode* head, int idx)
+  ListNode* DelNode_Index(ListNode* head, int idx)
   {
     if (head == nullptr)
     {
@@ -137,6 +137,31 @@ class solution {
     cur->next = nullptr;
     return head;
   }
+
+  typedef bool (*match_fn)(const ListNode*);
+  // 删除所有满足条件的节点
+  // 优化版，参考链接：https://coolshell.cn/articles/8990.html
+  ListNode* RemoveIf(ListNode* head, match_fn match)
+  {
+    ListNode** curr = &head;  // 二级指针，方便处理头节点
+
+    while (*curr != nullptr)
+    {
+      ListNode* entry = *curr;
+
+      if (match(entry))
+      {
+        *curr = entry->next;  // 删除当前节点
+        delete entry;
+      }
+      else
+      {
+        curr = &entry->next;  // 继续向后遍历
+      }
+    }
+
+    return head;
+  }
 };
 
 int main(void)
@@ -159,7 +184,7 @@ int main(void)
   solution().TraverseList(head);
 
   std::cout << "DelNode: " << std::endl;
-  head = solution().DelNode(head, 3);
+  head = solution().DelNode_Index(head, 3);
   solution().TraverseList(head);
 
   std::cout << "DelHead: " << std::endl;
@@ -169,4 +194,10 @@ int main(void)
   std::cout << "DelTail: " << std::endl;
   head = solution().DelTail(head);
   solution().TraverseList(head);
+
+  std::cout << "RemoveIf: " << std::endl;
+  head = solution().RemoveIf(head, [](const ListNode* node) { return node->val % 2 == 0; });
+  solution().TraverseList(head);
+
+  return 0;
 }
