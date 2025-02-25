@@ -137,7 +137,7 @@ class Solution {
     }
 
     ListNode* temp = *curr;
-    *curr          = temp->next;  // 删除当前节点
+    *curr          = (*curr)->next;  // 删除当前节点
     delete temp;
 
     return head;
@@ -190,19 +190,18 @@ class Solution {
     }
 
     ListNode** curr = &head;  // 二级指针，方便处理头节点
-
     while (*curr != nullptr)
     {
-      ListNode* entry = *curr;
+      ListNode* tmp = *curr;
 
-      if (match(entry))
+      if (match(tmp))
       {
-        *curr = entry->next;  // 删除当前节点
-        delete entry;
+        *curr = (*curr)->next;  //! 重点！ 删除当前节点
+        delete tmp;
       }
       else
       {
-        curr = &entry->next;  // 继续向后遍历
+        curr = &((*curr)->next);  //! 重点！ 指向下一个节点的指针
       }
     }
 
@@ -257,7 +256,7 @@ int main(void)
   head = sol.DelTail(head);
   std::cout << "DelTail: " << sol.TraverseList(head) << std::endl;
 
-  head = sol.RemoveIf(head, [](const ListNode* node) { return node->val % 2 == 0; });
+  head = sol.RemoveIf(head, [](const ListNode* node) { return node->val % 2 == 1; });
   std::cout << "RemoveIf: " << sol.TraverseList(head) << std::endl;
 
   head = sol.Reverse(head);
