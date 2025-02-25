@@ -11,7 +11,7 @@ class ListNode {
   ListNode* next = {};
 };
 
-class solution {
+class Solution {
  public:
   // 数组创建链表
   ListNode* CreateList(const std::vector<int>& arr)
@@ -171,38 +171,44 @@ class solution {
 
 int main(void)
 {
+  Solution sol{};
+
   std::cout << "CreateList: " << std::endl;
   std::vector<int> nums = {1, 2, 3, 4, 5};
-  auto* head            = solution().CreateList(nums);
-  solution().TraverseList(head);
+  auto* head            = sol.CreateList(nums);
+  sol.TraverseList(head);
 
   std::cout << "AddHead: " << std::endl;
-  head = solution().AddHead(head, 0);
-  solution().TraverseList(head);
+  head = sol.AddHead(head, 0);
+  sol.TraverseList(head);
 
   std::cout << "AddTail: " << std::endl;
-  head = solution().AddTail(head, 6);
-  solution().TraverseList(head);
+  head = sol.AddTail(head, 6);
+  sol.TraverseList(head);
 
   std::cout << "AddMid: " << std::endl;
-  head = solution().AddMid(head, 7, 3);
-  solution().TraverseList(head);
+  head = sol.AddMid(head, 7, 3);
+  sol.TraverseList(head);
 
   std::cout << "DelNode: " << std::endl;
-  head = solution().DelNode_Index(head, 3);
-  solution().TraverseList(head);
+  head = sol.DelNode_Index(head, 3);
+  sol.TraverseList(head);
 
   std::cout << "DelHead: " << std::endl;
-  head = solution().DelHead(head);
-  solution().TraverseList(head);
+  head = sol.DelHead(head);
+  sol.TraverseList(head);
 
   std::cout << "DelTail: " << std::endl;
-  head = solution().DelTail(head);
-  solution().TraverseList(head);
+  head = sol.DelTail(head);
+  sol.TraverseList(head);
 
   std::cout << "RemoveIf: " << std::endl;
-  head = solution().RemoveIf(head, [](const ListNode* node) { return node->val % 2 == 0; });
-  solution().TraverseList(head);
+  head = sol.RemoveIf(head, [](const ListNode* node) { return node->val % 2 == 0; });
+  sol.TraverseList(head);
+
+  std::cout << "FreeList: " << std::endl;
+  sol.FreeList(head);
+  sol.TraverseList(head);
 
   return 0;
 }
