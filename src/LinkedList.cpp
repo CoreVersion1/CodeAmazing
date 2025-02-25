@@ -143,6 +143,11 @@ class solution {
   // 优化版，参考链接：https://coolshell.cn/articles/8990.html
   ListNode* RemoveIf(ListNode* head, match_fn match)
   {
+    if (match == nullptr)
+    {
+      return head;
+    }
+
     ListNode** curr = &head;  // 二级指针，方便处理头节点
 
     while (*curr != nullptr)
