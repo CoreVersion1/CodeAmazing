@@ -1,5 +1,7 @@
 #include <iostream>
 #include <vector>
+#include <string>
+#include <sstream>
 
 // 单链表节点
 class ListNode {
@@ -45,19 +47,23 @@ class Solution {
   }
 
   // 遍历链表
-  void TraverseList(ListNode* head)
+  std::string TraverseList(ListNode* head)
   {
-    std::cout << "{";
+    std::ostringstream oss;
+
+    oss << "{";
     for (auto cur = head; cur != nullptr; cur = cur->next)
     {
-      std::cout << cur->val;
+      oss << cur->val;
 
       if (cur->next != nullptr)
       {
-        std::cout << ",";
+        oss << ",";
       }
     }
-    std::cout << "}" << std::endl;
+    oss << "}";
+
+    return oss.str();
   }
 
   // 头部添加节点
@@ -202,48 +208,63 @@ class Solution {
 
     return head;
   }
+
+  ListNode* Reverse(ListNode* head)
+  {
+    ListNode* prev = nullptr;
+    ListNode* curr = head;
+    ListNode* next = nullptr;
+
+    while (curr != nullptr)
+    {
+      next = curr->next;
+
+      // 反转
+      curr->next = prev;
+
+      prev = curr;
+      curr = next;
+    }
+
+    // 返回反转后的头节点
+    return prev;
+  }
 };
 
 int main(void)
 {
   Solution sol{};
 
-  std::cout << "CreateList: " << std::endl;
   std::vector<int> nums = {1, 2, 3, 4, 5};
   auto* head            = sol.CreateList(nums);
-  sol.TraverseList(head);
+  std::cout << "CreateList: " << sol.TraverseList(head) << std::endl;
 
-  std::cout << "AddHead: " << std::endl;
   head = sol.AddHead(head, 0);
-  sol.TraverseList(head);
+  std::cout << "AddHead: " << sol.TraverseList(head) << std::endl;
 
-  std::cout << "AddTail: " << std::endl;
   head = sol.AddTail(head, 6);
-  sol.TraverseList(head);
+  std::cout << "AddTail: " << sol.TraverseList(head) << std::endl;
 
-  std::cout << "AddMid: " << std::endl;
   head = sol.AddMid(head, 7, 3);
-  sol.TraverseList(head);
+  std::cout << "AddMid: " << sol.TraverseList(head) << std::endl;
 
-  std::cout << "DelNode: " << std::endl;
   head = sol.DelNode_Index(head, 3);
-  sol.TraverseList(head);
+  std::cout << "DelNode: " << sol.TraverseList(head) << std::endl;
 
-  std::cout << "DelHead: " << std::endl;
   head = sol.DelHead(head);
-  sol.TraverseList(head);
+  std::cout << "DelHead: " << sol.TraverseList(head) << std::endl;
 
-  std::cout << "DelTail: " << std::endl;
   head = sol.DelTail(head);
-  sol.TraverseList(head);
+  std::cout << "DelTail: " << sol.TraverseList(head) << std::endl;
 
-  std::cout << "RemoveIf: " << std::endl;
   head = sol.RemoveIf(head, [](const ListNode* node) { return node->val % 2 == 0; });
-  sol.TraverseList(head);
+  std::cout << "RemoveIf: " << sol.TraverseList(head) << std::endl;
 
-  std::cout << "FreeList: " << std::endl;
+  head = sol.Reverse(head);
+  std::cout << "Reverse: " << sol.TraverseList(head) << std::endl;
+
   sol.FreeList(head);
-  sol.TraverseList(head);
+  std::cout << "FreeList: " << sol.TraverseList(head) << std::endl;
 
   return 0;
 }
