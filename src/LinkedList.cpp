@@ -192,6 +192,8 @@ class Solution {
     ListNode** curr = &head;  // 二级指针，方便处理头节点
     while (*curr != nullptr)
     {
+      // std::cout << "*curr = " << (*curr) << ", head = " << head << std::endl;
+
       ListNode* tmp = *curr;
 
       if (match(tmp))
@@ -205,6 +207,8 @@ class Solution {
       }
     }
 
+    // 传入的head指针是局部变量
+    // 要返回可能更新后的head指针
     return head;
   }
 
