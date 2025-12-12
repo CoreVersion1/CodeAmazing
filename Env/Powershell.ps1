@@ -38,7 +38,7 @@ foreach ($name in $simpleAliases.Keys) {
     if (Test-Path "alias:$name") {
         Remove-Item "alias:$name" -Force -ErrorAction SilentlyContinue
     }
-    
+
     # 创建新别名
     Set-Alias -Name $name -Value $simpleAliases[$name] -Scope Global -Force -ErrorAction SilentlyContinue
 }
@@ -59,7 +59,7 @@ function ll {
         [Parameter(ValueFromRemainingArguments=$true)]
         [string[]]$Arguments
     )
-    
+
     try {
         if ($Arguments) {
             Get-ChildItem -Force @Arguments -ErrorAction Stop
@@ -86,21 +86,21 @@ function la {
         [Parameter(ValueFromRemainingArguments=$true)]
         [string[]]$Arguments
     )
-    
+
     try {
         # 兼容 PowerShell 5.1 和 7+
         $params = @{
             Force = $true
             ErrorAction = 'Stop'
         }
-        
+
         # 添加属性过滤器
         $params['Attributes'] = 'Hidden'
         
         if ($Arguments) {
             $params['Path'] = $Arguments
         }
-        
+
         Get-ChildItem @params
     } catch {
         if ($_.Exception.Message -notlike "*没有与指定条件匹配的项*") {
@@ -125,11 +125,11 @@ if (Get-Command vim -ErrorAction SilentlyContinue) {
 # ---------- 模块加载 ----------
 if (Get-Module PSReadLine -ListAvailable) {
     Import-Module PSReadLine -ErrorAction SilentlyContinue
-    
+
     Set-PSReadLineOption -EditMode Windows -ErrorAction SilentlyContinue
     Set-PSReadLineKeyHandler -Key Tab -Function MenuComplete -ErrorAction SilentlyContinue
     Set-PSReadLineOption -ShowToolTips -ErrorAction SilentlyContinue
-    
+
     # 有条件地设置预测功能
     $psrlVersion = (Get-Module PSReadLine).Version
     if ($psrlVersion -ge [Version]"2.2.0") {
@@ -146,17 +146,17 @@ function Initialize-OhMyPosh {
         Write-Warning "oh-my-posh 未安装，跳过主题设置"
         return $false
     }
-    
+
     try {
         # 获取 oh-my-posh 模块路径
         $module = Get-Module oh-my-posh -ListAvailable | Sort-Object Version -Descending | Select-Object -First 1
         if (-not $module) {
             throw "无法获取 oh-my-posh 模块路径"
         }
-        
+
         $themeDir = Join-Path $module.ModuleBase "themes"
         $themePath = $null
-        
+
         # 优先尝试 paradox 主题
         $paradoxTheme = Join-Path $themeDir "paradox.omp.json"
         if (Test-Path $paradoxTheme) {
@@ -171,7 +171,7 @@ function Initialize-OhMyPosh {
                 Write-Host "⚠ 未找到 paradox 主题，使用经典主题: $themePath" -ForegroundColor Yellow
             }
         }
-        
+
         # 最后回退到默认主题
         if (-not $themePath) {
             $defaultTheme = Join-Path $themeDir "default.omp.json"
@@ -180,15 +180,15 @@ function Initialize-OhMyPosh {
                 Write-Host "⚠ 使用默认主题: $themePath" -ForegroundColor Yellow
             }
         }
-        
+
         if (-not $themePath) {
             throw "在模块目录中找不到任何主题文件"
         }
-        
+
         # 初始化 oh-my-posh
         oh-my-posh init pwsh --config "$themePath" | Invoke-Expression
         return $true
-        
+
     } catch {
         return $false
     }
@@ -206,7 +206,7 @@ function Get-GitBranch {
     if (-not (Get-Command git -ErrorAction SilentlyContinue)) {
         return $null
     }
-    
+
     try {
         $gitDir = git rev-parse --git-dir 2>$null
         if (-not $gitDir) { return $null }
@@ -216,7 +216,7 @@ function Get-GitBranch {
             $commit = git rev-parse --short HEAD 2>$null
             return "DETACHED ($commit)"
         }
-        
+
         return $branch
     } catch {
         return $null
@@ -228,7 +228,7 @@ function prompt {
     # 使用完整日期时间格式 [2025-12-10 12:26:26]
     $time = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
     $path = (Get-Location).Path
-    
+
     # 缩写长路径
     $shortPath = if ($path.Length -gt 60) {
         $parts = $path -split '\\'
@@ -240,18 +240,18 @@ function prompt {
     } else {
         $path
     }
-    
+
     $gitBranch = ""
     $branch = Get-GitBranch
     if ($branch) {
         $gitBranch = " ($branch)"
     }
-    
+
     $isAdmin = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole(
         [Security.Principal.WindowsBuiltInRole]::Administrator
     )
     $adminMark = if ($isAdmin) { "#" } else { ">" }
-    
+
     Write-Host "[$time] $shortPath$gitBranch $adminMark" -ForegroundColor Cyan -NoNewline
     return " "
 }
@@ -269,14 +269,14 @@ function rrd {
         [Parameter(ValueFromRemainingArguments=$true)]
         [string[]]$Arguments
     )
-    
+
     # 保留原始命令行参数
     $rawArgs = $MyInvocation.Line.Substring($MyInvocation.Line.IndexOf($MyInvocation.InvocationName) + $MyInvocation.InvocationName.Length).Trim()
-    
+
     # 构建命令
     $cmd = "rradb default $rawArgs"
     Write-Host "[RUN] $cmd" -ForegroundColor Yellow
-    
+
     try {
         # 使用 PowerShell 的调用操作符执行原始命令
         $expression = "rradb default $rawArgs"
@@ -299,20 +299,20 @@ function rrds {
         [Parameter(ValueFromRemainingArguments=$true)]
         [string[]]$Arguments
     )
-    
+
     # 保留原始命令行参数
     $rawArgs = $MyInvocation.Line.Substring($MyInvocation.Line.IndexOf($MyInvocation.InvocationName) + $MyInvocation.InvocationName.Length).Trim()
-    
+
     # 检查危险字符
     if ($rawArgs -match '[;&|`>'']') {
         Write-Error "安全错误：命令包含禁止的字符: $rawArgs"
         return
     }
-    
+
     # 构建命令
     $cmd = "rradb default shell $rawArgs"
     Write-Host "[RUN] $cmd" -ForegroundColor Yellow
-    
+
     try {
         $expression = "rradb default shell $rawArgs"
         Invoke-Expression $expression
@@ -348,10 +348,10 @@ function rrdp {
         [Parameter(Mandatory=$true, Position=1)]
         [string]$d
     )
-    
-    $cmd = "rradb default push '$s' '$d'"
+
+    $cmd = "rradb default push $s $d"
     Write-Host "[RUN] $cmd" -ForegroundColor Yellow
-    
+
     try {
         & rradb default push $s $d
     } catch {
@@ -376,7 +376,7 @@ function rrdsut {
     
     $cmd = "rradb default shell uart_test -t $rawArgs"
     Write-Host "[RUN] $cmd" -ForegroundColor Yellow
-    
+
     try {
         $expression = "rradb default shell uart_test -t $rawArgs"
         Invoke-Expression $expression
