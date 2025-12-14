@@ -1,5 +1,7 @@
 #include <iostream>
 #include <vector>
+#include <string>
+#include <sstream>
 
 // 单链表节点
 class ListNode {
@@ -11,7 +13,7 @@ class ListNode {
   ListNode* next = {};
 };
 
-class solution {
+class Solution {
  public:
   // 数组创建链表
   ListNode* CreateList(const std::vector<int>& arr)
@@ -32,14 +34,36 @@ class solution {
     return head;
   }
 
-  // 遍历链表
-  void TraverseList(ListNode* head)
+  // 释放链表
+  void FreeList(ListNode*& head)
   {
+    while (head != nullptr)
+    {
+      auto* temp = head;
+      head       = head->next;
+      delete temp;
+    }
+    return;
+  }
+
+  // 遍历链表
+  std::string TraverseList(ListNode* head)
+  {
+    std::ostringstream oss;
+
+    oss << "{";
     for (auto cur = head; cur != nullptr; cur = cur->next)
     {
-      std::cout << cur->val << " ";
+      oss << cur->val;
+
+      if (cur->next != nullptr)
+      {
+        oss << ",";
+      }
     }
-    std::cout << std::endl;
+    oss << "}";
+
+    return oss.str();
   }
 
   // 头部添加节点
@@ -69,41 +93,53 @@ class solution {
   // 中间插入节点
   ListNode* AddMid(ListNode* head, int val, int pos)
   {
-    // 找到前驱节点
-    auto* cur = head;
-    for (int i = 0; i < pos - 1; ++i)
+    ListNode** curr = &head;  // 使用二级指针直接修改指向
+
+    // 遍历到目标位置的前驱节点
+    for (int i = 0; i < pos; ++i)
     {
-      if (cur->next != nullptr)
+      if (*curr == nullptr)
       {
-        cur = cur->next;
+        std::cout << "Invalid position" << std::endl;
+        return head;  // 位置超界
       }
+      curr = &((*curr)->next);
     }
 
+    // 创建并插入新节点
     auto* new_node = new ListNode(val);
-    new_node->next = cur->next;
-    cur->next      = new_node;
+    new_node->next = *curr;
+    *curr          = new_node;
+
     return head;
   }
 
   // 删除节点
-  ListNode* DelNode(ListNode* head, int idx)
+  ListNode* DelNode_Index(ListNode* head, int idx)
   {
-    if (head == nullptr)
-    {
-      return head;
-    }
+    ListNode** curr = &head;
 
     // 找到前驱节点
-    auto* cur = head;
-    for (int i = 0; i < idx - 1; i++)
+    for (int i = 0; i < idx; ++i)
     {
-      if (cur->next != nullptr)
+      if (*curr == nullptr)
       {
-        cur = cur->next;
+        std::cout << "Invalid index: " << idx << std::endl;
+        return head;  // 索引超界
       }
+      curr = &((*curr)->next);
     }
 
-    cur->next = cur->next->next;
+    if (*curr == nullptr)
+    {
+      std::cout << "Invalid index: " << idx << std::endl;
+      return head;  // 无节点可删除
+    }
+
+    ListNode* temp = *curr;
+    *curr          = (*curr)->next;  // 删除当前节点
+    delete temp;
+
     return head;
   }
 
@@ -128,45 +164,110 @@ class solution {
       return head;
     }
 
-    auto* cur = head;
-    while (cur->next->next != nullptr)
+    ListNode** curr = &head;
+
+    // 遍历到最后一个节点的前驱
+    while ((*curr)->next != nullptr)
     {
-      cur = cur->next;
+      curr = &((*curr)->next);
     }
 
-    cur->next = nullptr;
+    // 删除尾节点
+    delete *curr;
+    *curr = nullptr;
+
     return head;
+  }
+
+  typedef bool (*match_fn)(const ListNode*);
+  // 删除所有满足条件的节点
+  // 优化版，参考链接：https://coolshell.cn/articles/8990.html
+  ListNode* RemoveIf(ListNode* head, match_fn match)
+  {
+    if (match == nullptr)
+    {
+      return head;
+    }
+
+    ListNode** curr = &head;  // 二级指针，方便处理头节点
+    while (*curr != nullptr)
+    {
+      // std::cout << "*curr = " << (*curr) << ", head = " << head << std::endl;
+
+      ListNode* tmp = *curr;
+
+      if (match(tmp))
+      {
+        *curr = (*curr)->next;  //! 重点！ 删除当前节点
+        delete tmp;
+      }
+      else
+      {
+        curr = &((*curr)->next);  //! 重点！ 指向下一个节点的指针
+      }
+    }
+
+    // 传入的head指针是局部变量
+    // 要返回可能更新后的head指针
+    return head;
+  }
+
+  ListNode* Reverse(ListNode* head)
+  {
+    ListNode* prev = nullptr;
+    ListNode* curr = head;
+    ListNode* next = nullptr;
+
+    while (curr != nullptr)
+    {
+      next = curr->next;
+
+      // 反转
+      curr->next = prev;
+
+      prev = curr;
+      curr = next;
+    }
+
+    // 返回反转后的头节点
+    return prev;
   }
 };
 
 int main(void)
 {
-  std::cout << "CreateList: " << std::endl;
+  Solution sol{};
+
   std::vector<int> nums = {1, 2, 3, 4, 5};
-  auto* head            = solution().CreateList(nums);
-  solution().TraverseList(head);
+  auto* head            = sol.CreateList(nums);
+  std::cout << "CreateList: " << sol.TraverseList(head) << std::endl;
 
-  std::cout << "AddHead: " << std::endl;
-  head = solution().AddHead(head, 0);
-  solution().TraverseList(head);
+  head = sol.AddHead(head, 0);
+  std::cout << "AddHead: " << sol.TraverseList(head) << std::endl;
 
-  std::cout << "AddTail: " << std::endl;
-  head = solution().AddTail(head, 6);
-  solution().TraverseList(head);
+  head = sol.AddTail(head, 6);
+  std::cout << "AddTail: " << sol.TraverseList(head) << std::endl;
 
-  std::cout << "AddMid: " << std::endl;
-  head = solution().AddMid(head, 7, 3);
-  solution().TraverseList(head);
+  head = sol.AddMid(head, 7, 3);
+  std::cout << "AddMid: " << sol.TraverseList(head) << std::endl;
 
-  std::cout << "DelNode: " << std::endl;
-  head = solution().DelNode(head, 3);
-  solution().TraverseList(head);
+  head = sol.DelNode_Index(head, 3);
+  std::cout << "DelNode: " << sol.TraverseList(head) << std::endl;
 
-  std::cout << "DelHead: " << std::endl;
-  head = solution().DelHead(head);
-  solution().TraverseList(head);
+  head = sol.DelHead(head);
+  std::cout << "DelHead: " << sol.TraverseList(head) << std::endl;
 
-  std::cout << "DelTail: " << std::endl;
-  head = solution().DelTail(head);
-  solution().TraverseList(head);
+  head = sol.DelTail(head);
+  std::cout << "DelTail: " << sol.TraverseList(head) << std::endl;
+
+  head = sol.RemoveIf(head, [](const ListNode* node) { return node->val % 2 == 1; });
+  std::cout << "RemoveIf: " << sol.TraverseList(head) << std::endl;
+
+  head = sol.Reverse(head);
+  std::cout << "Reverse: " << sol.TraverseList(head) << std::endl;
+
+  sol.FreeList(head);
+  std::cout << "FreeList: " << sol.TraverseList(head) << std::endl;
+
+  return 0;
 }

@@ -11,7 +11,7 @@ class DoublyListNode {
   DoublyListNode* next = {};
 };
 
-class solution {
+class Solution {
  public:
   // 数组创建双向链表
   DoublyListNode* CreateDoublyLinkedList(const std::vector<int>& arr)
@@ -189,34 +189,36 @@ class solution {
 
 int main(void)
 {
+  Solution sol{};
+
   std::cout << "CreateDoublyLinkedList: " << std::endl;
   std::vector<int> arr = {1, 2, 3, 4, 5};
-  auto* head           = solution().CreateDoublyLinkedList(arr);
-  solution().TraverseDoublyLinkdedList(head);
+  auto* head           = sol.CreateDoublyLinkedList(arr);
+  sol.TraverseDoublyLinkdedList(head);
 
   std::cout << "AddHead: " << std::endl;
-  head = solution().AddHead(head, 0);
-  solution().TraverseDoublyLinkdedList(head);
+  head = sol.AddHead(head, 0);
+  sol.TraverseDoublyLinkdedList(head);
 
   std::cout << "AddTail: " << std::endl;
-  head = solution().AddTail(head, 6);
-  solution().TraverseDoublyLinkdedList(head);
+  head = sol.AddTail(head, 6);
+  sol.TraverseDoublyLinkdedList(head);
 
   std::cout << "AddMid: " << std::endl;
-  head = solution().AddMid(head, 7, 3);
-  solution().TraverseDoublyLinkdedList(head);
+  head = sol.AddMid(head, 7, 3);
+  sol.TraverseDoublyLinkdedList(head);
 
   std::cout << "DelListNode: " << std::endl;
-  head = solution().DelListNode(head, 3);
-  solution().TraverseDoublyLinkdedList(head);
+  head = sol.DelListNode(head, 3);
+  sol.TraverseDoublyLinkdedList(head);
 
   std::cout << "DelHead: " << std::endl;
-  head = solution().DelHead(head);
-  solution().TraverseDoublyLinkdedList(head);
+  head = sol.DelHead(head);
+  sol.TraverseDoublyLinkdedList(head);
 
   std::cout << "DelTail: " << std::endl;
-  head = solution().DelTail(head);
-  solution().TraverseDoublyLinkdedList(head);
+  head = sol.DelTail(head);
+  sol.TraverseDoublyLinkdedList(head);
 
   return 0;
 }
