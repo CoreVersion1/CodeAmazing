@@ -1,18 +1,44 @@
 # 嵌入式Linux工程师必研的20个开源项目
 
 &gt; **目标读者**：嵌入式Linux工程师、内核开发者、系统架构师  
-&gt; **更新日期**：2026-02-09  
+&gt; **更新日期**：2026-02-10
 &gt; **版本**：v1.0
 
 ---
 
 ## 目录
 
-1. [第一梯队：强烈推荐必须跟进（1-3）](#第一梯队强烈推荐必须跟进1-3)
-2. [第二梯队：高优先级推荐（4-8）](#第二梯队高优先级推荐4-8)
-3. [第三梯队：战略储备与新兴方向（9-15）](#第三梯队战略储备与新兴方向9-15)
-4. [补充梯队：关键领域补强（16-20）](#补充梯队关键领域补强16-20)
-5. [学习路线图总览](#学习路线图总览)
+- [嵌入式Linux工程师必研的20个开源项目](#嵌入式linux工程师必研的20个开源项目)
+  - [目录](#目录)
+  - [第一梯队：强烈推荐必须跟进（1-3）](#第一梯队强烈推荐必须跟进1-3)
+    - [1. Linux Kernel](#1-linux-kernel)
+    - [2. Zephyr RTOS](#2-zephyr-rtos)
+    - [3. YOCTO Project](#3-yocto-project)
+  - [第二梯队：高优先级推荐（4-8）](#第二梯队高优先级推荐4-8)
+    - [4. Buildroot](#4-buildroot)
+    - [5. U-Boot](#5-u-boot)
+    - [6. eBPF (Extended Berkeley Packet Filter)](#6-ebpf-extended-berkeley-packet-filter)
+    - [7. TensorFlow Lite for Microcontrollers (TFLM)](#7-tensorflow-lite-for-microcontrollers-tflm)
+    - [8. LVGL (Light and Versatile Graphics Library)](#8-lvgl-light-and-versatile-graphics-library)
+  - [第三梯队：战略储备与新兴方向（9-15）](#第三梯队战略储备与新兴方向9-15)
+    - [9. Trusted Firmware-A (TF-A) / OP-TEE](#9-trusted-firmware-a-tf-a--op-tee)
+    - [10. Rust for Linux / Embassy](#10-rust-for-linux--embassy)
+    - [11. 嵌入式容器化（Docker/Podman + containerd + K3s/KubeEdge）](#11-嵌入式容器化dockerpodman--containerd--k3skubeedge)
+    - [12. OpenThread / Matter](#12-openthread--matter)
+    - [13. QEMU](#13-qemu)
+    - [14. DPDK / SPDK](#14-dpdk--spdk)
+    - [15. ROS 2 (Robot Operating System 2)](#15-ros-2-robot-operating-system-2)
+  - [补充梯队：关键领域补强（16-20）](#补充梯队关键领域补强16-20)
+    - [16. Xen Project / Jailhouse（虚拟化与分区）](#16-xen-project--jailhouse虚拟化与分区)
+    - [17. FreeMODBUS / libmodbus + OPC UA（工业通信协议栈）](#17-freemodbus--libmodbus--opc-ua工业通信协议栈)
+    - [18. RISC-V生态系统（OpenSBI / Linux/RISC-V / GCC/RISC-V）](#18-risc-v生态系统opensbi--linuxrisc-v--gccrisc-v)
+    - [19. Mesa 3D / Vulkan（开源图形渲染栈）](#19-mesa-3d--vulkan开源图形渲染栈)
+    - [20. Zephyr + nRF Connect SDK / ESP-IDF（无线连接全栈）](#20-zephyr--nrf-connect-sdk--esp-idf无线连接全栈)
+  - [学习路线图总览](#学习路线图总览)
+    - [3年完整规划](#3年完整规划)
+    - [按行业方向的组合建议](#按行业方向的组合建议)
+    - [关键成功要素](#关键成功要素)
+  - [版本历史](#版本历史)
 
 ---
 
