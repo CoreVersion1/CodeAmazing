@@ -182,9 +182,6 @@ function rrdp {
             if (-not (Test-Path $_)) {
                 throw "源文件不存在: $_"
             }
-            if ((Get-Item $_).PSIsContainer) {
-                throw "源路径必须是文件，不能是目录: $_"
-            }
             return $true
         })]
         [string]$s,
