@@ -191,17 +191,17 @@ function Get-IPv4DiagnosticsText {
     }
 
     $output.Add('--- Get-NetIPInterface IPv4 ---')
-    $output.Add((Get-NetIPInterface -AddressFamily IPv4 | Where-Object $filter | Format-List | Out-String))
+    $output.Add((Get-NetIPInterface -AddressFamily IPv4 -ErrorAction SilentlyContinue | Where-Object $filter | Format-List | Out-String))
 
     $output.Add('--- Get-NetIPAddress IPv4 ---')
-    $output.Add((Get-NetIPAddress -AddressFamily IPv4 | Where-Object $filter | Sort-Object IPAddress | Select-Object InterfaceAlias, InterfaceIndex, IPAddress, PrefixLength, PrefixOrigin, SuffixOrigin, SkipAsSource | Format-Table -AutoSize | Out-String))
+    $output.Add((Get-NetIPAddress -AddressFamily IPv4 -ErrorAction SilentlyContinue | Where-Object $filter | Sort-Object IPAddress | Select-Object InterfaceAlias, InterfaceIndex, IPAddress, PrefixLength, PrefixOrigin, SuffixOrigin, SkipAsSource | Format-Table -AutoSize | Out-String))
 
     $output.Add('--- Get-DnsClientServerAddress IPv4 ---')
-    $output.Add((Get-DnsClientServerAddress -AddressFamily IPv4 | Where-Object $filter | Format-List | Out-String))
+    $output.Add((Get-DnsClientServerAddress -AddressFamily IPv4 -ErrorAction SilentlyContinue | Where-Object $filter | Format-List | Out-String))
 
     if ($adapter) {
         $output.Add('--- Get-NetRoute IPv4 ---')
-        $output.Add((Get-NetRoute -AddressFamily IPv4 -InterfaceIndex $adapter.InterfaceIndex | Sort-Object DestinationPrefix, RouteMetric | Select-Object DestinationPrefix, NextHop, RouteMetric, ifMetric, PolicyStore | Format-Table -AutoSize | Out-String))
+        $output.Add((Get-NetRoute -AddressFamily IPv4 -InterfaceIndex $adapter.InterfaceIndex -ErrorAction SilentlyContinue | Sort-Object DestinationPrefix, RouteMetric | Select-Object DestinationPrefix, NextHop, RouteMetric, ifMetric, PolicyStore | Format-Table -AutoSize | Out-String))
     }
 
     $output.Add('--- netsh interface ipv4 show interface ---')
@@ -232,10 +232,10 @@ function Save-IPv4StateBackup {
         ComputerName = $env:COMPUTERNAME
         Identifier = $Identifier
         Adapter = $adapter | Select-Object InterfaceAlias, InterfaceIndex, Name, Status, MacAddress, LinkSpeed, InterfaceDescription
-        IPInterface = Get-NetIPInterface -AddressFamily IPv4 -InterfaceIndex $adapter.InterfaceIndex | Select-Object InterfaceAlias, InterfaceIndex, Dhcp, ConnectionState, InterfaceMetric, AutomaticMetric, NlMtu
-        IPAddresses = @(Get-NetIPAddress -AddressFamily IPv4 | Where-Object $filter | Sort-Object IPAddress | Select-Object InterfaceAlias, InterfaceIndex, IPAddress, PrefixLength, PrefixOrigin, SuffixOrigin, SkipAsSource, AddressState, PolicyStore)
-        DnsServers = @(Get-DnsClientServerAddress -AddressFamily IPv4 | Where-Object $filter | Select-Object InterfaceAlias, InterfaceIndex, ServerAddresses)
-        Routes = @(Get-NetRoute -AddressFamily IPv4 -InterfaceIndex $adapter.InterfaceIndex | Sort-Object DestinationPrefix, RouteMetric | Select-Object DestinationPrefix, NextHop, RouteMetric, ifMetric, PolicyStore)
+        IPInterface = @(Get-NetIPInterface -AddressFamily IPv4 -InterfaceIndex $adapter.InterfaceIndex -ErrorAction SilentlyContinue | Select-Object InterfaceAlias, InterfaceIndex, Dhcp, ConnectionState, InterfaceMetric, AutomaticMetric, NlMtu)
+        IPAddresses = @(Get-NetIPAddress -AddressFamily IPv4 -ErrorAction SilentlyContinue | Where-Object $filter | Sort-Object IPAddress | Select-Object InterfaceAlias, InterfaceIndex, IPAddress, PrefixLength, PrefixOrigin, SuffixOrigin, SkipAsSource, AddressState, PolicyStore)
+        DnsServers = @(Get-DnsClientServerAddress -AddressFamily IPv4 -ErrorAction SilentlyContinue | Where-Object $filter | Select-Object InterfaceAlias, InterfaceIndex, ServerAddresses)
+        Routes = @(Get-NetRoute -AddressFamily IPv4 -InterfaceIndex $adapter.InterfaceIndex -ErrorAction SilentlyContinue | Sort-Object DestinationPrefix, RouteMetric | Select-Object DestinationPrefix, NextHop, RouteMetric, ifMetric, PolicyStore)
         NetshInterface = (& netsh interface ipv4 show interface $Identifier 2>&1 | Out-String)
         NetshConfig = (& netsh interface ipv4 show config "name=$Identifier" 2>&1 | Out-String)
     }
@@ -265,7 +265,12 @@ function Invoke-PlannedCommand {
 
     if ($exitCode -ne 0) {
         if (Test-NicIPv4BenignNetshFailure -Arguments $Command.Arguments -ExitCode $exitCode -Output $commandOutput) {
-            Write-Warning "netsh returned exit code $exitCode, but the adapter is already in the requested DHCP state; continuing."
+            Write-Warning "netsh returned exit code $exitCode for an idempotent command. Continuing; the final IPv4 state validation will still run."
+            return
+        }
+
+        if ($Command.ContinueOnElementNotFound) {
+            Write-Warning "netsh returned exit code $exitCode while enabling DHCP/static coexistence. Continuing because -AllowNoDhcpLease treats this coexistence command as best-effort; the final static IPv4 validation will still run."
             return
         }
 
@@ -320,7 +325,8 @@ function Test-HybridDesiredState {
         [Parameter(Mandatory)][string]$Identifier,
         [Parameter(Mandatory)][string]$ExpectedAddress,
         [Parameter(Mandatory)][int]$ExpectedPrefixLength,
-        [Parameter(Mandatory)][bool]$ExpectedSkipAsSource
+        [Parameter(Mandatory)][bool]$ExpectedSkipAsSource,
+        [Parameter(Mandatory)][bool]$AllowNoDhcpLease
     )
 
     $filter = if ($Identifier -match '^\d+$') {
@@ -339,7 +345,7 @@ function Test-HybridDesiredState {
             $_.SkipAsSource -eq $ExpectedSkipAsSource
         }).Count -gt 0
 
-    return $ipInterface -and $ipInterface.Dhcp -eq 'Enabled' -and $hasDhcpAddress -and $hasStaticAddress
+    return $ipInterface -and $ipInterface.Dhcp -eq 'Enabled' -and $hasStaticAddress -and ($hasDhcpAddress -or $AllowNoDhcpLease)
 }
 
 function Assert-TargetAddressNotAssignedToOtherAdapter {
@@ -480,6 +486,20 @@ if (-not $PSBoundParameters.ContainsKey('InterfaceAlias') -and -not $PSBoundPara
 }
 
 $identifierForCleanup = Resolve-NicIdentifier -InterfaceAlias $InterfaceAlias -InterfaceIndex $InterfaceIndex
+$interfaceCommandIdentifier = $identifierForCleanup
+
+if ($identifierForCleanup -match '^\d+$') {
+    try {
+        $adapterForInterfaceCommands = Get-AdapterByIdentifier -Identifier $identifierForCleanup
+        $interfaceCommandIdentifier = $adapterForInterfaceCommands.Name
+    }
+    catch {
+        if (-not $WhatIfPreference) {
+            throw "Could not resolve adapter name for InterfaceIndex $identifierForCleanup. The netsh interface property command may require the adapter name. Details: $($_.Exception.Message)"
+        }
+    }
+}
+
 $removeAddressStrings = @()
 
 if ($RemoveAddress) {
@@ -509,6 +529,7 @@ $planParams = @{
     AllowStaticGateway = $AllowStaticGateway
     AllowNoDhcpLease = $AllowNoDhcpLease
     RemoveAddress = $removeAddressStrings
+    InterfaceCommandIdentifier = $interfaceCommandIdentifier
 }
 
 if ($PSBoundParameters.ContainsKey('InterfaceAlias')) {
@@ -540,7 +561,8 @@ if (-not $WhatIfPreference -and $Mode -eq 'Hybrid' -and $IPAddress -and -not $Dn
         -Identifier $identifierForCleanup `
         -ExpectedAddress $IPAddress.ToString() `
         -ExpectedPrefixLength $PrefixLength `
-        -ExpectedSkipAsSource $SkipAsSource
+        -ExpectedSkipAsSource $SkipAsSource `
+        -AllowNoDhcpLease $AllowNoDhcpLease
 
     if ($alreadyHybrid) {
         $planParams.AlreadyInDesiredState = $true

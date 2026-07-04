@@ -86,6 +86,14 @@ Expected result when no DHCP server is available:
 
 To force the static address not to be used as an outgoing source address, explicitly add `-SkipAsSource 1`.
 
+If older copies of the script fail at the first `dhcpstaticipcoexistence=enabled store=active` command with `找不到元素` / `Element not found`, update both `Set-NicIPv4Mode.ps1` and `NicIPv4Mode.Core.psm1`. Current `-AllowNoDhcpLease` mode restores DHCP first, then enables DHCP/static coexistence, which is more compatible with adapters that do not yet have a usable IPv4 lease.
+
+When `-InterfaceIndex` is used, current versions still use the index for address and DNS commands, but resolve the adapter name for `netsh interface ipv4 set interface ... dhcpstaticipcoexistence=...`. This avoids another `netsh` compatibility issue where `set address name=<index>` works but `set interface interface=<index>` returns `Element not found`.
+
+In `-AllowNoDhcpLease` mode, the DHCP/static coexistence commands are best-effort. If a driver or current IPv4 state rejects those `netsh set interface` commands, the script warns and still tries to add the static IPv4 address. The final validation still requires DHCP to be enabled and the requested static IPv4 address to exist.
+
+If `netsh add address` reports that the object already exists, the script treats it as an idempotent result and continues. The final validation then confirms whether the existing address has the requested prefix and `SkipAsSource` setting.
+
 ## Backups and validation
 
 Real changes save a pre-change snapshot like:

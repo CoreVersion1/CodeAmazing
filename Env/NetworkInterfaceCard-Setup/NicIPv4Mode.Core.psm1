@@ -85,13 +85,16 @@ function New-NetshCommand {
         [string]$Description,
 
         [Parameter(Mandatory)]
-        [string[]]$Arguments
+        [string[]]$Arguments,
+
+        [switch]$ContinueOnElementNotFound
     )
 
     [pscustomobject]@{
         Program = 'netsh'
         Arguments = $Arguments
         Description = $Description
+        ContinueOnElementNotFound = [bool]$ContinueOnElementNotFound
     }
 }
 
@@ -132,8 +135,9 @@ function Test-NicIPv4BenignNetshFailure {
 
     $isSetAddressDhcp = $argumentText -match '^interface ipv4 set address ' -and $argumentText -match '(^| )source=dhcp($| )'
     $isDhcpAlreadyEnabled = $outputText -match '已在此接口上启用 DHCP' -or $outputText -match 'DHCP.*already.*enabled'
+    $isAddAddress = $argumentText -match '^interface ipv4 add address '
 
-    return $isSetAddressDhcp -and $isDhcpAlreadyEnabled
+    return ($isSetAddressDhcp -and $isDhcpAlreadyEnabled) -or $isAddAddress
 }
 
 function New-NicIPv4CommandPlan {
@@ -146,6 +150,8 @@ function New-NicIPv4CommandPlan {
         [string]$InterfaceAlias,
 
         [nullable[int]]$InterfaceIndex,
+
+        [string]$InterfaceCommandIdentifier,
 
         [string]$IPAddress,
 
@@ -168,6 +174,12 @@ function New-NicIPv4CommandPlan {
     )
 
     $identifier = Resolve-NicIdentifier -InterfaceAlias $InterfaceAlias -InterfaceIndex $InterfaceIndex
+    $interfaceIdentifier = if ([string]::IsNullOrWhiteSpace($InterfaceCommandIdentifier)) {
+        $identifier
+    }
+    else {
+        $InterfaceCommandIdentifier.Trim()
+    }
     $commands = [System.Collections.Generic.List[object]]::new()
 
     switch ($Mode) {
@@ -192,7 +204,7 @@ function New-NicIPv4CommandPlan {
 
             $commands.Add((New-NetshCommand `
                 -Description 'Disable DHCP/static IPv4 coexistence.' `
-                -Arguments @('interface', 'ipv4', 'set', 'interface', "interface=$identifier", 'dhcpstaticipcoexistence=disabled', 'store=persistent')))
+                -Arguments @('interface', 'ipv4', 'set', 'interface', "interface=$interfaceIdentifier", 'dhcpstaticipcoexistence=disabled', 'store=persistent')))
         }
 
         'StaticOnly' {
@@ -246,13 +258,15 @@ function New-NicIPv4CommandPlan {
             $mask = ConvertTo-IPv4Mask -PrefixLength $PrefixLength
             $skip = if ($SkipAsSource) { 'true' } else { 'false' }
 
-            $commands.Add((New-NetshCommand `
-                -Description 'Enable active DHCP/static IPv4 coexistence.' `
-                -Arguments @('interface', 'ipv4', 'set', 'interface', "interface=$identifier", 'dhcpstaticipcoexistence=enabled', 'store=active')))
+            if (-not $AllowNoDhcpLease) {
+                $commands.Add((New-NetshCommand `
+                    -Description 'Enable active DHCP/static IPv4 coexistence.' `
+                    -Arguments @('interface', 'ipv4', 'set', 'interface', "interface=$interfaceIdentifier", 'dhcpstaticipcoexistence=enabled', 'store=active')))
 
-            $commands.Add((New-NetshCommand `
-                -Description 'Enable persistent DHCP/static IPv4 coexistence.' `
-                -Arguments @('interface', 'ipv4', 'set', 'interface', "interface=$identifier", 'dhcpstaticipcoexistence=enabled', 'store=persistent')))
+                $commands.Add((New-NetshCommand `
+                    -Description 'Enable persistent DHCP/static IPv4 coexistence.' `
+                    -Arguments @('interface', 'ipv4', 'set', 'interface', "interface=$interfaceIdentifier", 'dhcpstaticipcoexistence=enabled', 'store=persistent')))
+            }
 
             $commands.Add((New-NetshCommand `
                 -Description 'Restore DHCP IPv4 addressing before adding the extra static address.' `
@@ -266,13 +280,29 @@ function New-NicIPv4CommandPlan {
                 $commands.Add((New-WaitDhcpCommand -Identifier $identifier -TimeoutSeconds 60))
             }
 
-            $commands.Add((New-NetshCommand `
-                -Description 'Re-enable active DHCP/static IPv4 coexistence after DHCP reset.' `
-                -Arguments @('interface', 'ipv4', 'set', 'interface', "interface=$identifier", 'dhcpstaticipcoexistence=enabled', 'store=active')))
+            $activeCoexistenceDescription = if ($AllowNoDhcpLease) {
+                'Enable active DHCP/static IPv4 coexistence after DHCP restore.'
+            }
+            else {
+                'Re-enable active DHCP/static IPv4 coexistence after DHCP reset.'
+            }
+
+            $persistentCoexistenceDescription = if ($AllowNoDhcpLease) {
+                'Enable persistent DHCP/static IPv4 coexistence after DHCP restore.'
+            }
+            else {
+                'Re-enable persistent DHCP/static IPv4 coexistence after DHCP reset.'
+            }
 
             $commands.Add((New-NetshCommand `
-                -Description 'Re-enable persistent DHCP/static IPv4 coexistence after DHCP reset.' `
-                -Arguments @('interface', 'ipv4', 'set', 'interface', "interface=$identifier", 'dhcpstaticipcoexistence=enabled', 'store=persistent')))
+                -Description $activeCoexistenceDescription `
+                -Arguments @('interface', 'ipv4', 'set', 'interface', "interface=$interfaceIdentifier", 'dhcpstaticipcoexistence=enabled', 'store=active') `
+                -ContinueOnElementNotFound:$AllowNoDhcpLease))
+
+            $commands.Add((New-NetshCommand `
+                -Description $persistentCoexistenceDescription `
+                -Arguments @('interface', 'ipv4', 'set', 'interface', "interface=$interfaceIdentifier", 'dhcpstaticipcoexistence=enabled', 'store=persistent') `
+                -ContinueOnElementNotFound:$AllowNoDhcpLease))
 
             $addressArgs = @('interface', 'ipv4', 'add', 'address', "name=$identifier", "address=$IPAddress", "mask=$mask", 'store=persistent', "skipassource=$skip")
 
