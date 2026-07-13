@@ -58,7 +58,7 @@ pwsh -ExecutionPolicy Bypass -File .\Set-NicIPv4Mode.ps1 -Mode StaticOnly -Inter
 pwsh -ExecutionPolicy Bypass -File .\Set-NicIPv4Mode.ps1 -Mode Hybrid -InterfaceAlias "以太网 5" -IPAddress 192.168.50.10 -PrefixLength 24
 ```
 
-`Hybrid` defaults to `-SkipAsSource $true`, so Windows should keep using the DHCP address as the normal outgoing source address. It also rejects `-Gateway` by default to avoid default-route conflicts. If a static gateway is intentional, add `-AllowStaticGateway`.
+`Hybrid` defaults to `-SkipAsSource $false`, so the extra static address can be used as an outgoing source address for direct LAN communication. It also rejects `-Gateway` by default to avoid default-route conflicts. If a static gateway is intentional, add `-AllowStaticGateway`. If the static address should not be selected as a source address, explicitly add `-SkipAsSource 1`.
 
 Recommended long-term command:
 
@@ -66,7 +66,7 @@ Recommended long-term command:
 powershell -ExecutionPolicy Bypass -File "D:\01Temp\Codex\20260704-NetInterfaceCardMode\Set-NicIPv4Mode.ps1" -Mode Hybrid -InterfaceIndex 19 -IPAddress 192.168.50.10 -PrefixLength 24 -Yes
 ```
 
-If the adapter is already in the requested Hybrid state, the script prints no planned commands and leaves the adapter unchanged.
+If the adapter is already in the requested Hybrid state, the script prints no planned commands and leaves the adapter unchanged. If the static address already exists but its `SkipAsSource` value is wrong, the script repairs it with `Set-NetIPAddress` instead of relying on `netsh add address`.
 
 ## DHCP enabled plus static IP without a current DHCP lease
 
@@ -92,7 +92,7 @@ When `-InterfaceIndex` is used, current versions still use the index for address
 
 In `-AllowNoDhcpLease` mode, the DHCP/static coexistence commands are best-effort. If a driver or current IPv4 state rejects those `netsh set interface` commands, the script warns and still tries to add the static IPv4 address. The final validation still requires DHCP to be enabled and the requested static IPv4 address to exist.
 
-If `netsh add address` reports that the object already exists, the script treats it as an idempotent result and continues. The final validation then confirms whether the existing address has the requested prefix and `SkipAsSource` setting.
+If `netsh add address` reports that the object already exists, the script treats it as an idempotent result and continues. The final validation then confirms whether the existing address has the requested prefix and `SkipAsSource` setting. Current versions also detect this case before planning and generate a `Set-NetIPAddress ... -SkipAsSource ...` repair command when only `SkipAsSource` is wrong.
 
 ## Backups and validation
 
@@ -117,4 +117,10 @@ The script also rejects a target IPv4 address if it is already assigned to anoth
 
 ```powershell
 pwsh -NoProfile -ExecutionPolicy Bypass -File .\tests\NicIPv4Mode.Tests.ps1
+```
+
+## Actual
+
+```powershell
+powershell -ExecutionPolicy Bypass -File "D:\01Temp\Codex\20260704-NetInterfaceCardMode\Set-NicIPv4Mode.ps1" -Mode Hybrid -InterfaceIndex 18 -IPAddress 192.168.50.10 -PrefixLength 24 -Yes
 ```

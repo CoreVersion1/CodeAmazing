@@ -16,7 +16,7 @@ param(
 
     [ipaddress[]]$Dns,
 
-    [object]$SkipAsSource = $true,
+    [object]$SkipAsSource = $false,
 
     [switch]$AllowStaticGateway,
 
@@ -77,8 +77,8 @@ Notes:
   - Use -BackupPath to choose where pre-change JSON backups are saved.
   - Run PowerShell as Administrator when changing adapter settings.
   - ExecutionPolicy Bypass above is per command; it does not change the system execution policy.
-  - Hybrid defaults to SkipAsSource=true and rejects Gateway unless -AllowStaticGateway is used.
-  - Hybrid with -AllowNoDhcpLease defaults to SkipAsSource=false unless -SkipAsSource is specified.
+  - Hybrid defaults to SkipAsSource=false so the static address can be used as an outgoing source address.
+  - Use -SkipAsSource 1 if the static address should not be used as an outgoing source address.
   - Use -AllowNoDhcpLease when Hybrid should keep DHCP enabled but proceed without a current DHCP lease.
 "@
 }
@@ -253,6 +253,12 @@ function Invoke-PlannedCommand {
         $identifier = (($Command.Arguments | Where-Object { $_ -like 'interface=*' }) -replace '^interface=', '')
         $timeoutText = (($Command.Arguments | Where-Object { $_ -like 'timeout=*' }) -replace '^timeout=', '')
         Wait-IPv4DhcpAddress -Identifier $identifier -TimeoutSeconds ([int]$timeoutText)
+        return
+    }
+
+    if ($Command.Program -eq 'Set-NetIPAddress') {
+        $parameters = $Command.Parameters
+        Set-NetIPAddress @parameters
         return
     }
 
@@ -550,6 +556,31 @@ if ($Gateway) {
 
 if ($Dns) {
     $planParams.Dns = @($Dns | ForEach-Object { $_.ToString() })
+}
+
+$existingTargetAddress = $null
+
+if ($Mode -eq 'Hybrid' -and $IPAddress) {
+    $targetAddressText = $IPAddress.ToString()
+    $existingTargetAddress = Get-NetIPAddress -AddressFamily IPv4 -ErrorAction SilentlyContinue |
+        Where-Object {
+            if ($identifierForCleanup -match '^\d+$') {
+                $_.InterfaceIndex -eq [int]$identifierForCleanup
+            }
+            else {
+                $_.InterfaceAlias -eq $identifierForCleanup
+            }
+        } |
+        Where-Object {
+            $_.IPAddress -eq $targetAddressText -and
+            $_.PrefixLength -eq $PrefixLength -and
+            $_.PrefixOrigin -eq 'Manual'
+        } |
+        Select-Object -First 1
+
+    if ($existingTargetAddress) {
+        $planParams.ExistingAddressSkipAsSource = [bool]$existingTargetAddress.SkipAsSource
+    }
 }
 
 if (-not $WhatIfPreference -and $Mode -in @('Hybrid', 'StaticOnly') -and $IPAddress) {

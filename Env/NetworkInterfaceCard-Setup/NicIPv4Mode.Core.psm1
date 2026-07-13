@@ -114,6 +114,48 @@ function New-WaitDhcpCommand {
     }
 }
 
+function New-SetIPAddressSkipAsSourceCommand {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)]
+        [string]$Identifier,
+
+        [Parameter(Mandatory)]
+        [string]$IPAddress,
+
+        [Parameter(Mandatory)]
+        [bool]$SkipAsSource
+    )
+
+    $skip = if ($SkipAsSource) { 'true' } else { 'false' }
+    $arguments = if ($Identifier -match '^\d+$') {
+        @('-InterfaceIndex', $Identifier, '-IPAddress', $IPAddress, '-SkipAsSource', $skip)
+    }
+    else {
+        @('-InterfaceAlias', $Identifier, '-IPAddress', $IPAddress, '-SkipAsSource', $skip)
+    }
+
+    [pscustomobject]@{
+        Program = 'Set-NetIPAddress'
+        Arguments = $arguments
+        Description = 'Repair SkipAsSource on an existing static IPv4 address.'
+        Parameters = if ($Identifier -match '^\d+$') {
+            @{
+                InterfaceIndex = [int]$Identifier
+                IPAddress = $IPAddress
+                SkipAsSource = $SkipAsSource
+            }
+        }
+        else {
+            @{
+                InterfaceAlias = $Identifier
+                IPAddress = $IPAddress
+                SkipAsSource = $SkipAsSource
+            }
+        }
+    }
+}
+
 function Test-NicIPv4BenignNetshFailure {
     [CmdletBinding()]
     param(
@@ -162,7 +204,7 @@ function New-NicIPv4CommandPlan {
 
         [string[]]$Dns,
 
-        [bool]$SkipAsSource = $true,
+        [bool]$SkipAsSource = $false,
 
         [switch]$AllowStaticGateway,
 
@@ -170,7 +212,9 @@ function New-NicIPv4CommandPlan {
 
         [switch]$AlreadyInDesiredState,
 
-        [switch]$AllowNoDhcpLease
+        [switch]$AllowNoDhcpLease,
+
+        [nullable[bool]]$ExistingAddressSkipAsSource
     )
 
     $identifier = Resolve-NicIdentifier -InterfaceAlias $InterfaceAlias -InterfaceIndex $InterfaceIndex
@@ -304,16 +348,26 @@ function New-NicIPv4CommandPlan {
                 -Arguments @('interface', 'ipv4', 'set', 'interface', "interface=$interfaceIdentifier", 'dhcpstaticipcoexistence=enabled', 'store=persistent') `
                 -ContinueOnElementNotFound:$AllowNoDhcpLease))
 
-            $addressArgs = @('interface', 'ipv4', 'add', 'address', "name=$identifier", "address=$IPAddress", "mask=$mask", 'store=persistent', "skipassource=$skip")
-
-            if (-not [string]::IsNullOrWhiteSpace($Gateway)) {
-                $addressArgs += "gateway=$Gateway"
-                $addressArgs += 'gwmetric=1'
+            if ($null -ne $ExistingAddressSkipAsSource) {
+                if ([bool]$ExistingAddressSkipAsSource -ne $SkipAsSource) {
+                    $commands.Add((New-SetIPAddressSkipAsSourceCommand `
+                        -Identifier $identifier `
+                        -IPAddress $IPAddress `
+                        -SkipAsSource $SkipAsSource))
+                }
             }
+            else {
+                $addressArgs = @('interface', 'ipv4', 'add', 'address', "name=$identifier", "address=$IPAddress", "mask=$mask", 'store=persistent', "skipassource=$skip")
 
-            $commands.Add((New-NetshCommand `
-                -Description 'Add an extra static IPv4 address while keeping DHCP enabled.' `
-                -Arguments $addressArgs))
+                if (-not [string]::IsNullOrWhiteSpace($Gateway)) {
+                    $addressArgs += "gateway=$Gateway"
+                    $addressArgs += 'gwmetric=1'
+                }
+
+                $commands.Add((New-NetshCommand `
+                    -Description 'Add an extra static IPv4 address while keeping DHCP enabled.' `
+                    -Arguments $addressArgs))
+            }
 
             if ($Dns -and $Dns.Count -gt 0) {
                 $commands.Add((New-NetshCommand `
